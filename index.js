@@ -32,6 +32,14 @@ async function run() {
         // _________create booking api________
         app.post('/booking', async(req, res) => {
             const booking = req.body;
+
+            const { treatmentName, date, slot, patientemail } = booking;
+            const query = { treatmentName, date, slot, patientemail };
+            const exists = await bookingCollection.findOne(query);
+            if (exists) {
+                return res.send({ success: "duplicate booking", booking: exists });
+            };
+            // console.log(query)
             const result = await bookingCollection.insertOne(booking);
             res.send(result);
         })
