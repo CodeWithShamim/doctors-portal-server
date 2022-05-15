@@ -6,6 +6,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // _________use middleware__________
+// 718E7BPU
 app.use(cors());
 app.use(express.json());
 
@@ -42,6 +43,28 @@ async function run() {
             // console.log(query)
             const result = await bookingCollection.insertOne(booking);
             res.send(result);
+        })
+
+        // ______get available booking___
+        app.get('/available', async(req, res) => {
+            const date = req.query.date || "May 15, 2022";
+
+            // get all services 
+            const services = await treatmentsCollection.find().toArray();
+
+
+            // get the booking of that day 
+            const query = { date: date };
+            const bookings = await bookingCollection.find(query).toArray();
+
+            // for each service, find booking for that service 
+            services.forEach(service => {
+                const serviceBookings = bookings.filter(b => b.treatmentName === service.name)
+                const booked = serviceBookings.map(serviceBook => serviceBook.slot);
+                const available = service.slots.filter(s => !booked.includes(s));
+                service.available = available;
+            })
+            res.send(services)
         })
 
     } finally {
