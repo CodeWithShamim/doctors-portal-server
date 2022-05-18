@@ -21,6 +21,7 @@ async function run() {
         await client.connect();
         const treatmentsCollection = client.db('doctors_portal').collection('treatments');
         const bookingCollection = client.db('doctors_portal').collection('booking');
+        const userCollection = client.db('doctors_portal').collection('users');
 
         // ______get treatment service______
         app.get('/treatment', async(req, res) => {
@@ -34,8 +35,8 @@ async function run() {
         app.post('/booking', async(req, res) => {
             const booking = req.body;
 
-            const { treatmentName, date, slot, patientemail } = booking;
-            const query = { treatmentName, date, slot, patientemail };
+            const { treatmentName, date, slot, patientEmail } = booking;
+            const query = { treatmentName, date, slot, patientEmail };
             const exists = await bookingCollection.findOne(query);
             if (exists) {
                 return res.send({ success: "duplicate booking", booking: exists });
@@ -47,7 +48,7 @@ async function run() {
 
         // ______get available booking___
         app.get('/available', async(req, res) => {
-            const date = req.query.date || "May 15, 2022";
+            const date = req.query.date;
 
             // get all services 
             const services = await treatmentsCollection.find().toArray();
@@ -57,14 +58,42 @@ async function run() {
             const query = { date: date };
             const bookings = await bookingCollection.find(query).toArray();
 
+            console.log(bookings)
+
             // for each service, find booking for that service 
             services.forEach(service => {
                 const serviceBookings = bookings.filter(b => b.treatmentName === service.name)
-                const booked = serviceBookings.map(serviceBook => serviceBook.slot);
-                const available = service.slots.filter(s => !booked.includes(s));
-                service.available = available;
+                const bookedSlots = serviceBookings.map(serviceBook => serviceBook.slot);
+                const available = service.slots.filter(s => !bookedSlots.includes(s));
+                service.slots = available;
+
             })
             res.send(services)
+        })
+
+        // get per user booking 
+        app.get('/booking', async(req, res) => {
+            const patientEmail = req.query.email;
+            // console.log(patientEmail)
+            const query = { patientEmail: patientEmail };
+            const result = await bookingCollection.find(query).toArray();
+            res.send(result);
+        });
+
+        // put user info 
+        app.put('/user/:email', async(req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    user
+                }
+            };
+
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
         })
 
     } finally {
