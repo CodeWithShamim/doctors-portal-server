@@ -6,8 +6,7 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// _________use middleware__________
-// 718E7BPU
+// _________use middleware_________
 app.use(cors());
 app.use(express.json());
 
@@ -43,6 +42,7 @@ async function run() {
       .collection("treatments");
     const bookingCollection = client.db("doctors_portal").collection("booking");
     const userCollection = client.db("doctors_portal").collection("users");
+    const doctorCollection = client.db("doctors_portal").collection("doctors");
 
     // ______get treatment service______
     app.get("/treatment", async (req, res) => {
@@ -174,6 +174,30 @@ async function run() {
       const isAdmin = user?.role === "Admin";
       res.send(isAdmin);
     });
+
+    // add new doctor
+    app.post("/addDoctor", async (req, res) => {
+      const doctor = req.body;
+      const result = await doctorCollection.insertOne(doctor);
+      res.send(result);
+    });
+
+    // get all doctor
+    app.get("doctor", verifyJwt, async (req, res) => {
+      const query = {};
+      const doctors = await doctorCollection.find(query).toArray();
+      res.send(doctors);
+    });
+
+    // delete doctor
+    app.delete("/deleteDoctor/:email", verifyJwt, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await doctorCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // _________________________
   } finally {
     // await client.close();
   }
