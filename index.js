@@ -47,7 +47,7 @@ async function run() {
     // ______get treatment service______
     app.get("/treatment", async (req, res) => {
       const query = {};
-      const cursor = treatmentsCollection.find(query);
+      const cursor = treatmentsCollection.find(query).project({ name: 1 });
       const treatments = await cursor.toArray();
       res.send(treatments);
     });
@@ -77,8 +77,6 @@ async function run() {
       // get the booking of that day
       const query = { date: date };
       const bookings = await bookingCollection.find(query).toArray();
-
-      console.log(bookings);
 
       // for each service, find booking for that service
       services.forEach((service) => {
@@ -183,7 +181,7 @@ async function run() {
     });
 
     // get all doctor
-    app.get("doctor", verifyJwt, async (req, res) => {
+    app.get("/doctor", verifyJwt, async (req, res) => {
       const query = {};
       const doctors = await doctorCollection.find(query).toArray();
       res.send(doctors);
@@ -194,7 +192,7 @@ async function run() {
       const email = req.params.email;
       const query = { email: email };
       const result = await doctorCollection.deleteOne(query);
-      res.send(result);
+      res.json(result);
     });
 
     // _________________________
